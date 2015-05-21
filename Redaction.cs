@@ -1,48 +1,49 @@
 using System;
+using System.Text.RegularExpressions;
 
 namespace piiCore
 {
 	public class Redaction
 	{
-		private int redactionMode=0;
+		private int redactionMode;
 		private string censorString="REDACTED";
-
-
-		public void SetReplacementString(string replacementString) {
-			redactionMode=1;
-			censorString=replacementString;
-			Init();
-		}
-
+		private SpecialRedactor redactor;
 
 		public Redaction() {
-
+			redactionMode=1;
 		}
 
-		public Redaction(SpecialRedaction processor) {
+		public Redaction(string replacementString) {
+			redactionMode=2;
+			censorString=replacementString;
+		}
+		
+			
 
+		public Redaction(SpecialRedactor processor) {
+			redactor=processor;
+			redactionMode=3;
 		}
 
-		private void Init() {
-
+		public string Replace(string input, ValidationTest origin) {
+			foreach (Match matched in origin.matches) {
+				input=input.Replace(matched.ToString(),GetRedacted(matched.ToString()));
+			}
+			return input;
 		}
-
-		public string Redact(string input) {
-			return null;
-		}
-
-		private string ProcessRedaction(string input) {
+		
+		private string GetRedacted(string input) {
 			string returnValue="";
 			switch (redactionMode) {
-				case 0:
-				returnValue="";
-				break;
 				case 1:
-				returnValue=censorString;
-				break;
+					returnValue="";
+					break;
 				case 2:
-				returnValue="A REDACTIONS!!";
-				break;
+					returnValue=censorString;
+					break;
+				case 3:
+					returnValue=redactor(input);
+					break;
 			}
 			return returnValue;
 		}

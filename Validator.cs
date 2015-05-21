@@ -1,32 +1,53 @@
 using System;
 using System.Data;
+using Excel=Microsoft.Office.Interop.Excel;
 
 namespace piiCore
 {
 	public class Validator
 	{
 		private ValidationSuite suite;
-		private RedactionProfile profile;
+		private Redaction redaction;
+		public ResultSet results=new ResultSet();
+		public DataTable validated;
 
-		public Validator(ValidationSuite suite,RedactionProfile profile) {
+		public Validator(ValidationSuite suite,Redaction redaction) {
 			this.suite = suite;
-			this.profile = profile;
+			this.redaction = redaction;
 		}
 
-
-
-
-		public void TestDataTable(DataTable table) {
-			TestDataTable(table,false);
+		public Validator(ValidationSuite suite) {
+			this.suite=suite;
 		}
-
-		public DataTable TestReader(IDataReader reader,bool imposeRedactions) {
-			return null;
-		}
+		
+		
 
 
-		public DataTable GetResults() {
-			return results;
+		public Excel.Workbook TestExcel(string filePath) {
+			Excel.Application excel=new Excel.Application();
+			Excel.Workbook wkBook=excel.Workbooks.Open(filePath, 0, true, 5, "", "", true, Excel.XlPlatform.xlWindows, "\t", false, false, 0, true, 1, 0);
+			foreach (Excel._Worksheet worksheet in wkBook.Worksheets) {
+				Excel.Range range=worksheet.UsedRange;
+				int rows=range.Rows.Count;
+				int cols=range.Columns.Count;
+				for (int rN=1;rN<=rows;rN++) {
+					for (int cN=1;cN<=cols;cN++) {
+						Excel.Range thisRange=(Excel.Range)range.Cells[rN,cN];
+						string testVal=thisRange.Value2.ToString();
+						foreach (ValidationTest vld in suite.validators) {
+							bool thisResult=vld.Test(testVal);
+							if (thisResult) {
+								results.Add(new Result(rN,cN,vld,testVal,worksheet.Name));
+								if (redaction!=null) {
+									Excel.Range replaceRange=(Excel.Range)worksheet.Cells[rN,cN];
+									replaceRange.Value2=redaction.Replace(testVal,vld);
+								}
+							}
+						}
+					}
+				}
+			}
+			return wkBook;
 		}
 
 		/// <summary>
@@ -35,26 +56,17 @@ namespace piiCore
 		/// <param name="table">the table to test</param>
 		/// <param name="imposeRedactions">whether to call the redactor</param>
 		/// <returns></returns>
-		public DataTable TestDataTable(DataTable table, bool imposeRedactions) {    
-			InitResultTable();
+		public DataTable TestDataTable(DataTable table) {    
 			int rowNumber=1;    
 			foreach (DataRow row in table.Rows) {
 				int colNumber=1;
 				foreach (var item in row.ItemArray) {
-					foreach (ValidatorObject vld in sessionTests) {
+					foreach (ValidationTest vld in suite.validators) {
 						bool thisResult=vld.Test(item.ToString());
 						if (thisResult) {
-							DataRow resultRow=results.NewRow();
-							object[] toInsert=new object[3];
-							toInsert[0]=rowNumber;
-							toInsert[1]=colNumber;
-							toInsert[2]=vld.GetName();
-							toInsert[3]=item.ToString();
-							results.Rows.Add(toInsert);
-							if (imposeRedactions) {
-								redactor.Redact(vld.redactor);
-
-								//table[rowNumber-1][colNumber-1]=vld.Redactor(item.ToString());
+							results.Add(new Result(rowNumber, colNumber,vld,item));
+							if (redaction!=null) {
+								table.Rows[rowNumber-1][colNumber-1]=redaction.Replace(item.ToString(),vld);
 							}
 						}
 					}
@@ -65,16 +77,9 @@ namespace piiCore
 			return table;
 		}
 
-		public bool TestString(string inputValue) {
-			bool result=false;
-			foreach (ValidatorObject vld in sessionTests) {
-				bool thisResult=vld.Test(inputValue);
-				if (thisResult==true) {
-					result=true;
-				}
-			}
-			return result;
-		}
+		
+	
+}
 	
 }
 

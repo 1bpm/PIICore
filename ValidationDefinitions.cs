@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 
 namespace piiCore
 {
@@ -46,7 +47,7 @@ namespace piiCore
 		public static ValidationTest nhsNumber=
 			new ValidationTest("nhs number",
 		                    @"( |^|\n|\r)(\d{3}(| )\d{3}(| )\d{4})( |$|\n|\r)",
-		                   (SpecialRedactor) delegate(string input) {
+		                   (PostValidator) delegate(string input) {
 			long theNum=Convert.ToInt64(input.Replace(" ",""));
 			long[] ignore={9999999999};
 			if (theNum.ToString().Length!=10 || ignore.Contains(theNum)) {
@@ -63,7 +64,7 @@ namespace piiCore
 				return false;
 			}
 		},
-		(SpecialRedaction) delegate(string input) {
+		(SpecialRedactor) delegate(string input) {
 			return "";
 		}
 		);

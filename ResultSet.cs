@@ -25,6 +25,7 @@ namespace piiCore
 			foreach (Result thisResult in results) {
 				table.Rows.Add (thisResult.Get ());
 			}
+			return table;
 		}
 
 

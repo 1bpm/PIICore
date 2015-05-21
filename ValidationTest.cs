@@ -3,13 +3,17 @@ using System.Text.RegularExpressions;
 
 namespace piiCore
 {
+	
+	public delegate bool PostValidator(string input);
+	public delegate string SpecialRedactor(string input);
+	
 	public class ValidationTest
 	{
 		public string name;
 		private Regex expression;
 		public MatchCollection matches;
-		private PostValidator postValidator;
 		private SpecialRedactor redactor;
+		private PostValidator postValidator;
 
 
 		public ValidationTest(string name, string regex, SpecialRedactor redactor) {
@@ -41,8 +45,8 @@ namespace piiCore
 			bool returnVal=false;
 			if (RegexTest(inputData)) {
 				foreach (Match match in matches) {
-					if (postProcess!=null) {
-						returnVal=postProcess(match.Value);
+					if (postValidator!=null) {
+						returnVal=postValidator(match.Value);
 					} else {
 						returnVal=true;
 					}
@@ -67,7 +71,6 @@ namespace piiCore
 			return returnVal;
 		}
 	}
-
 
 
 
