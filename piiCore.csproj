@@ -65,5 +65,10 @@
     <Compile Include="ResultSet.cs" />
     <Compile Include="Redaction.cs" />
   </ItemGroup>
+  <ItemGroup>
+    <None Include="readme.md">
+      <Generator>TextTemplatingFileGenerator</Generator>
+    </None>
+  </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
 </Project>
